@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-
+#include "UserModeScheduler.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
