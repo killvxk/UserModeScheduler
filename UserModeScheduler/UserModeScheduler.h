@@ -9,12 +9,13 @@
 
 namespace UmsScheduler {
 	///////////////
-	class IThread {
+	class IUmsThread {
 	public:
 		virtual void Run() = 0;
 	public:
-		~IThread() {}
+		~IUmsThread() {}
 	};
+	typedef std::shared_ptr<IUmsThread> IUmsThreadPtr;
 
 	///////////////////////////////////////
 	template <typename T> void Clear(T &t) {
@@ -80,20 +81,20 @@ namespace UmsScheduler {
 				);
 		}
 	public:
-		void SetThread(IThread *iThread) {
+		void SetThread(IUmsThread *IUmsThread) {
 			Check(TRUE == SetThreadInformation(
-				UmsThreadUserContext, &iThread,	sizeof(iThread)
+				UmsThreadUserContext, &IUmsThread,	sizeof(IUmsThread)
 				));
 		}
 	public:
-		IThread *GetThread() {
-			IThread *iThread = NULL;
+		IUmsThread *GetThread() {
+			IUmsThread *IUmsThread = NULL;
 			ULONG returnLength = 0;
 			Check(TRUE == QueryThreadInformation(
-				UmsThreadUserContext, &iThread, sizeof(iThread), &returnLength
+				UmsThreadUserContext, &IUmsThread, sizeof(IUmsThread), &returnLength
 				));
-			Check(sizeof(iThread) == returnLength);
-			return iThread;
+			Check(sizeof(IUmsThread) == returnLength);
+			return IUmsThread;
 		}
 	public:
 		BOOL IsSuspended() {
@@ -121,4 +122,18 @@ namespace UmsScheduler {
 			ums_context = NULL;
 		}
 	};
+	typedef std::shared_ptr<TUmsThreadContext> TUmsThreadContextPtr;
+
+	///////////////////////////////////
+	class TUmsThread : public IUmsThread {
+	private:
+		TUmsThread() {}
+	private:
+		TUmsCompletionListPtr completion_list;
+	public:
+		TUmsThread(TUmsCompletionListPtr completion_list) : completion_list(completion_list) {
+			//todo
+		}
+	};
+
 }
