@@ -13,9 +13,24 @@ namespace UmsScheduler {
 	public:
 		virtual void Run() = 0;
 	public:
+		enum EPriority { Normal = 1, High = 2 };
+	public:
+		virtual void SetPriority(EPriority priority) = 0;
+	public:
+		virtual EPriority GetPriority() = 0;
+	public:
 		~IUmsThread() {}
 	};
 	typedef std::shared_ptr<IUmsThread> IUmsThreadPtr;
+
+	////////////
+	class IRun {
+	public:
+		virtual void Run() = 0;
+	public:
+		virtual ~IRun() {}
+	};
+	typedef std::shared_ptr<IRun> IRunPtr;
 
 	///////////////////////////////////////
 	template <typename T> void Clear(T &t) {
@@ -137,15 +152,30 @@ namespace UmsScheduler {
 	public:
 		TUmsThreadContext threadContext;
 	private:
+		IRunPtr iRun;
+	private:
 		enum { KB = 1024 };
+	private:
+		EPriority priority;
 	public:
-		TUmsThread(TUmsCompletionListPtr completion_list, DWORD stackSize = 1) : completion_list(completion_list), hThread(NULL), threadId(0) {
+		void SetPriority(EPriority priority) { this->priority = priority; }
+	public:
+		EPriority GetPriority() { return priority; }
+	private:
+		static DWORD CALLBACK UMSThreadProxyMain(LPVOID lpParameter)
+		{
+			TUmsThread *thread = reinterpret_cast<TUmsThread*>(lpParameter);
+			thread->Run();
+		}
+	public:
+		TUmsThread(TUmsCompletionListPtr completion_list, IRunPtr iRun, EPriority priority = Normal, DWORD stackSize = 1) : 
+		  completion_list(completion_list), hThread(NULL), threadId(0), iRun(iRun), priority(priority) {
+
 			UMS_CREATE_THREAD_ATTRIBUTES umsAttributes; Clear(umsAttributes);
 			PPROC_THREAD_ATTRIBUTE_LIST pAttributeList = NULL;
 			SIZE_T sizeAttributeList = 0;
 
 			threadContext.SetThread(this);
-
 			umsAttributes.UmsVersion = UMS_VERSION;
 			umsAttributes.UmsContext = threadContext.GetTheardContext();
 			umsAttributes.UmsCompletionList = completion_list->GetCompletionList();
@@ -154,14 +184,15 @@ namespace UmsScheduler {
 			Check(GetLastError() == ERROR_INSUFFICIENT_BUFFER);
 
 			std::vector<char> attributeList(sizeAttributeList);
+			pAttributeList = reinterpret_cast<PPROC_THREAD_ATTRIBUTE_LIST>(&attributeList[0]);
 			Check(TRUE == ::InitializeProcThreadAttributeList(pAttributeList, 1, 0, &sizeAttributeList));
 			Check(TRUE == ::UpdateProcThreadAttribute(pAttributeList, 0, PROC_THREAD_ATTRIBUTE_UMS_THREAD, &umsAttributes, sizeof(UMS_CREATE_THREAD_ATTRIBUTES), NULL, NULL));
 
 			hThread = ::CreateRemoteThreadEx(
 				GetCurrentProcess(), NULL, stackSize*KB, UMSThreadProxyMain, 
-				this, STACK_SIZE_PARAM_IS_A_RESERVATION, pAttributeList, &hThread
+				this, STACK_SIZE_PARAM_IS_A_RESERVATION, pAttributeList, &threadId
 				);
-
+			Check(NULL != hThread);
 			::DeleteProcThreadAttributeList(pAttributeList);
 		}
 	};
