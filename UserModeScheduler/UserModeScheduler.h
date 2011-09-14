@@ -23,15 +23,6 @@ namespace UmsScheduler {
 	};
 	typedef std::shared_ptr<IUmsThread> IUmsThreadPtr;
 
-	////////////
-	class IRun {
-	public:
-		virtual void Run() = 0;
-	public:
-		virtual ~IRun() {}
-	};
-	typedef std::shared_ptr<IRun> IRunPtr;
-
 	///////////////////////////////////////
 	template <typename T> void Clear(T &t) {
 		memset(&t, 0, sizeof(t));
@@ -49,8 +40,60 @@ namespace UmsScheduler {
 
 #define Check(x) CheckMacro(x, __FILE__, __LINE__)
 
+	////////////
+	class IRun {
+	public:
+		virtual void Run() = 0;
+	public:
+		virtual ~IRun() {}
+	};
+	typedef std::shared_ptr<IRun> IRunPtr;
+
+	/////////////////////
+	class IUmsScheduler {
+	public:
+		virtual void QueueWorker(IRunPtr iRun) = 0;
+	public:
+		virtual ~IUmsScheduler() {}
+	};
+	typedef std::shared_ptr<IUmsScheduler> IUmsSchedulerPtr;
+
 	//////////////////////////
-	class TUmsCompletionList {
+	class IUmsCompletionList {
+	public:
+		virtual PUMS_COMPLETION_LIST GetCompletionList() = 0;
+	public:
+		virtual ~IUmsCompletionList() {};
+	};
+	typedef std::shared_ptr<IUmsCompletionList> IUmsCompletionListPtr;
+
+	/////////////////////////
+	class IUmsThreadContext {
+	public:
+		virtual PUMS_CONTEXT GetTheardContext() = 0;
+	private:
+		virtual BOOL SetThreadInformation(
+			UMS_THREAD_INFO_CLASS threadInfoClass, PVOID threadInfo, ULONG threadInfoLength
+			) = 0;
+	private:
+		virtual BOOL QueryThreadInformation(
+			UMS_THREAD_INFO_CLASS threadInfoClass, PVOID threadInfo, ULONG threadInfoLength, PULONG returnLength
+			) = 0;
+	public:
+		virtual void SetThread(IUmsThread *IUmsThread) = 0;
+	public:
+		virtual IUmsThread *GetThread() = 0;
+	public:
+		virtual BOOL IsSuspended() = 0;
+	public:
+		virtual BOOL IsTerminated() = 0;
+	public:
+		virtual ~IUmsThreadContext() {}
+	};
+	typedef std::shared_ptr<IUmsThreadContext> IUmsThreadContextPtr;
+
+	///////////////////////////////////////////////
+	class TUmsCompletionList : public IUmsCompletionList {
 	private:
 		PUMS_COMPLETION_LIST completion_list;
 	public:
@@ -67,10 +110,9 @@ namespace UmsScheduler {
 			completion_list = NULL;
 		}
 	};
-	typedef std::shared_ptr<TUmsCompletionList> TUmsCompletionListPtr;
 
 	/////////////////////////
-	class TUmsThreadContext {
+	class TUmsThreadContext : public IUmsThreadContext {
 	private:
 		PUMS_CONTEXT ums_context;
 	public:
@@ -137,14 +179,18 @@ namespace UmsScheduler {
 			ums_context = NULL;
 		}
 	};
-	typedef std::shared_ptr<TUmsThreadContext> TUmsThreadContextPtr;
+
+	////////////////////////////////////////////
+	class TUmsScheduler : public IUmsScheduler {
+		//todo
+	};
 
 	//////////////////////////////////////
 	class TUmsThread : public IUmsThread {
 	private:
 		TUmsThread() {}
 	private:
-		TUmsCompletionListPtr completion_list;
+		IUmsCompletionListPtr completion_list;
 	private:
 		HANDLE hThread;
 	private:
@@ -168,7 +214,7 @@ namespace UmsScheduler {
 			thread->Run();
 		}
 	public:
-		TUmsThread(TUmsCompletionListPtr completion_list, IRunPtr iRun, EPriority priority = Normal, DWORD stackSize = 1) : 
+		TUmsThread(IUmsCompletionListPtr completion_list, IRunPtr iRun, EPriority priority = Normal, DWORD stackSize = 1) : 
 		  completion_list(completion_list), hThread(NULL), threadId(0), iRun(iRun), priority(priority) {
 
 			UMS_CREATE_THREAD_ATTRIBUTES umsAttributes; Clear(umsAttributes);
@@ -197,4 +243,19 @@ namespace UmsScheduler {
 		}
 	};
 
+	static VOID NTAPI SchedulerProc(
+		RTL_UMS_SCHEDULER_REASON Reason, ULONG_PTR ActivationPayload, PVOID SchedulerParam
+    ) {
+		//todo
+	}
+
+	inline void RunScheduler() {
+		UMS_SCHEDULER_STARTUP_INFO startupInfo; Clear(startupInfo);
+		TUmsCompletionList completionList;
+		startupInfo.CompletionList = completionList.GetCompletionList();
+		startupInfo.SchedulerParam = NULL;
+		startupInfo.SchedulerProc = SchedulerProc;
+		startupInfo.UmsVersion = UMS_VERSION;
+		Check(TRUE == ::EnterUmsSchedulingMode(&startupInfo));
+	}
 }
