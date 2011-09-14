@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <deque>
 
 namespace UmsScheduler {
 	//////////////////
@@ -103,13 +104,27 @@ namespace UmsScheduler {
 	class TUmsCompletionList : public IUmsCompletionList {
 	private:
 		PUMS_COMPLETION_LIST completion_list;
+	private:
+		HANDLE hEvent;
 	public:
-		TUmsCompletionList() : completion_list(NULL) {
+		TUmsCompletionList() : completion_list(NULL), hEvent(NULL) {
 			Check(TRUE == ::CreateUmsCompletionList(&completion_list));
+			Check(TRUE == ::GetUmsCompletionListEvent(completion_list, &hEvent));
 		}
+	public:
+		HANDLE GetEvent() { return hEvent; }
 	public:
 		PUMS_COMPLETION_LIST GetCompletionList() {
 			return completion_list;
+		}
+	public:
+		void DequeueCompletions(std::deque<PUMS_CONTEXT> &completions) {
+			PUMS_CONTEXT completion = NULL;
+			Check(TRUE == ::DequeueUmsCompletionListItems(completion_list, 0, &completion));
+			while(NULL != completion) {
+				completions.push_back(completion);
+				completion = ::GetNextUmsListItem(completion);
+			}
 		}
 	public:
 		virtual ~TUmsCompletionList() {
