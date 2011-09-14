@@ -8,7 +8,7 @@
 #include <sstream>
 
 namespace UmsScheduler {
-	///////////////
+	//////////////////
 	class IUmsThread {
 	public:
 		virtual void Run() = 0;
@@ -23,7 +23,7 @@ namespace UmsScheduler {
 	};
 	typedef std::shared_ptr<IUmsThread> IUmsThreadPtr;
 
-	///////////////////////////////////////
+	////////////////////////////////////////
 	template <typename T> void Clear(T &t) {
 		memset(&t, 0, sizeof(t));
 	}
@@ -52,7 +52,11 @@ namespace UmsScheduler {
 	/////////////////////
 	class IUmsScheduler {
 	public:
+		virtual PUMS_COMPLETION_LIST GetCompletionList() = 0;
+	public:
 		virtual void QueueWorker(IRunPtr iRun) = 0;
+	public:
+		virtual void Dispatch() = 0;
 	public:
 		virtual ~IUmsScheduler() {}
 	};
@@ -92,7 +96,10 @@ namespace UmsScheduler {
 	};
 	typedef std::shared_ptr<IUmsThreadContext> IUmsThreadContextPtr;
 
-	///////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////
+	__declspec(thread, selectany) IUmsScheduler *iUmsScheduler = NULL;
+
+	//////////////////////////////////////////////////////
 	class TUmsCompletionList : public IUmsCompletionList {
 	private:
 		PUMS_COMPLETION_LIST completion_list;
@@ -111,7 +118,7 @@ namespace UmsScheduler {
 		}
 	};
 
-	/////////////////////////
+	////////////////////////////////////////////////////
 	class TUmsThreadContext : public IUmsThreadContext {
 	private:
 		PUMS_CONTEXT ums_context;
@@ -182,7 +189,22 @@ namespace UmsScheduler {
 
 	////////////////////////////////////////////
 	class TUmsScheduler : public IUmsScheduler {
-		//todo
+	private:
+		TUmsCompletionList completion_list;
+	public:
+		PUMS_COMPLETION_LIST GetCompletionList() { return completion_list.GetCompletionList(); }
+	public:
+		TUmsScheduler() { }
+	public:
+		void Dispatch() {
+			Check(false); //todo
+		}
+	public:
+		virtual void QueueWorker(IRunPtr iRun) {
+			Check(false); //todo
+		}
+	public:
+		virtual ~TUmsScheduler() {}
 	};
 
 	//////////////////////////////////////
@@ -243,16 +265,31 @@ namespace UmsScheduler {
 		}
 	};
 
+	////////////////////////////////
 	static VOID NTAPI SchedulerProc(
 		RTL_UMS_SCHEDULER_REASON Reason, ULONG_PTR ActivationPayload, PVOID SchedulerParam
     ) {
-		//todo
+		iUmsScheduler->Dispatch();
 	}
 
+	///////////////////////
+	class ScopedScheduler {
+	public:
+		ScopedScheduler() { iUmsScheduler = new TUmsScheduler(); }
+	public:
+		~ScopedScheduler() {
+			if(NULL != iUmsScheduler) {
+				delete iUmsScheduler;
+				iUmsScheduler = NULL;
+			}
+		}
+	};
+
+	////////////////////////////
 	inline void RunScheduler() {
+		ScopedScheduler scopedScheduler;
 		UMS_SCHEDULER_STARTUP_INFO startupInfo; Clear(startupInfo);
-		TUmsCompletionList completionList;
-		startupInfo.CompletionList = completionList.GetCompletionList();
+		startupInfo.CompletionList = iUmsScheduler->GetCompletionList();
 		startupInfo.SchedulerParam = NULL;
 		startupInfo.SchedulerProc = SchedulerProc;
 		startupInfo.UmsVersion = UMS_VERSION;
