@@ -77,21 +77,57 @@ namespace UmsScheduler {
 	public:
 		virtual PUMS_CONTEXT GetTheardContext() = 0;
 	private:
-		virtual BOOL SetThreadInformation(
-			UMS_THREAD_INFO_CLASS threadInfoClass, PVOID threadInfo, ULONG threadInfoLength
-			) = 0;
+		static BOOL SetThreadInformation(
+			PUMS_CONTEXT ums_context, UMS_THREAD_INFO_CLASS threadInfoClass, PVOID threadInfo, ULONG threadInfoLength
+			) {
+			return ::SetUmsThreadInformation(
+				ums_context, threadInfoClass, threadInfo, threadInfoLength
+				);
+		}
 	private:
-		virtual BOOL QueryThreadInformation(
-			UMS_THREAD_INFO_CLASS threadInfoClass, PVOID threadInfo, ULONG threadInfoLength, PULONG returnLength
-			) = 0;
+		static BOOL QueryThreadInformation(
+			PUMS_CONTEXT ums_context, UMS_THREAD_INFO_CLASS threadInfoClass, PVOID threadInfo, ULONG threadInfoLength, PULONG returnLength
+			) {
+			return ::QueryUmsThreadInformation(
+				ums_context, threadInfoClass, threadInfo, threadInfoLength,	returnLength
+				);
+		}
 	public:
-		virtual void SetThread(IUmsThread *IUmsThread) = 0;
+		static void SetThread(PUMS_CONTEXT ums_context, IUmsThread *IUmsThread) {
+			Check(TRUE == SetThreadInformation(
+				ums_context, UmsThreadUserContext, &IUmsThread,	sizeof(IUmsThread)
+				));
+		}
 	public:
-		virtual IUmsThread *GetThread() = 0;
+		static IUmsThread *GetThread(PUMS_CONTEXT ums_context) {
+			IUmsThread *IUmsThread = NULL;
+			ULONG returnLength = 0;
+			Check(TRUE == QueryThreadInformation(
+				ums_context, UmsThreadUserContext, &IUmsThread, sizeof(IUmsThread), &returnLength
+				));
+			Check(sizeof(IUmsThread) == returnLength);
+			return IUmsThread;
+		}
 	public:
-		virtual BOOL IsSuspended() = 0;
+		BOOL IsSuspended(PUMS_CONTEXT ums_context) {
+			BOOLEAN suspended = false;
+			ULONG returnLength = 0;
+			Check(TRUE == QueryThreadInformation(
+				ums_context, UmsThreadIsSuspended, &suspended, sizeof(suspended), &returnLength
+				));
+			Check(sizeof(suspended) == returnLength);
+			return (TRUE == suspended);
+		}
 	public:
-		virtual BOOL IsTerminated() = 0;
+		BOOL IsTerminated(PUMS_CONTEXT ums_context) {
+			BOOLEAN terminated = false;
+			ULONG returnLength = 0;
+			Check(TRUE == QueryThreadInformation(
+				ums_context, UmsThreadIsTerminated, &terminated, sizeof(terminated), &returnLength
+				));
+			Check(sizeof(terminated) == returnLength);
+			return (TRUE == terminated);
+		}
 	public:
 		virtual ~IUmsThreadContext() {}
 	};
@@ -122,7 +158,11 @@ namespace UmsScheduler {
 			PUMS_CONTEXT completion = NULL;
 			Check(TRUE == ::DequeueUmsCompletionListItems(completion_list, 0, &completion));
 			while(NULL != completion) {
-				completions.push_back(completion);
+				IUmsThread *thread = IUmsThreadContext::GetThread(completion);
+				if((NULL != thread) && (thread->GetPriority() == IUmsThread::High))
+					completions.push_front(completion);
+				else
+					completions.push_back(completion);
 				completion = ::GetNextUmsListItem(completion);
 			}
 		}
@@ -143,58 +183,6 @@ namespace UmsScheduler {
 		}
 	public:
 		PUMS_CONTEXT GetTheardContext() { return ums_context; }
-	private:
-		BOOL SetThreadInformation(
-			UMS_THREAD_INFO_CLASS threadInfoClass, PVOID threadInfo, ULONG threadInfoLength
-			) {
-			return ::SetUmsThreadInformation(
-				ums_context, threadInfoClass, threadInfo, threadInfoLength
-				);
-		}
-	private:
-		BOOL QueryThreadInformation(
-			UMS_THREAD_INFO_CLASS threadInfoClass, PVOID threadInfo, ULONG threadInfoLength, PULONG returnLength
-			) {
-			return ::QueryUmsThreadInformation(
-				ums_context, threadInfoClass, threadInfo, threadInfoLength,	returnLength
-				);
-		}
-	public:
-		void SetThread(IUmsThread *IUmsThread) {
-			Check(TRUE == SetThreadInformation(
-				UmsThreadUserContext, &IUmsThread,	sizeof(IUmsThread)
-				));
-		}
-	public:
-		IUmsThread *GetThread() {
-			IUmsThread *IUmsThread = NULL;
-			ULONG returnLength = 0;
-			Check(TRUE == QueryThreadInformation(
-				UmsThreadUserContext, &IUmsThread, sizeof(IUmsThread), &returnLength
-				));
-			Check(sizeof(IUmsThread) == returnLength);
-			return IUmsThread;
-		}
-	public:
-		BOOL IsSuspended() {
-			BOOLEAN suspended = false;
-			ULONG returnLength = 0;
-			Check(TRUE == QueryThreadInformation(
-				UmsThreadIsSuspended, &suspended, sizeof(suspended), &returnLength
-				));
-			Check(sizeof(suspended) == returnLength);
-			return (TRUE == suspended);
-		}
-	public:
-		BOOL IsTerminated() {
-			BOOLEAN terminated = false;
-			ULONG returnLength = 0;
-			Check(TRUE == QueryThreadInformation(
-				UmsThreadIsTerminated, &terminated, sizeof(terminated), &returnLength
-				));
-			Check(sizeof(terminated) == returnLength);
-			return (TRUE == terminated);
-		}
 	public:
 		virtual ~TUmsThreadContext() {
 			Check(TRUE == ::DeleteUmsThreadContext(ums_context));
@@ -258,7 +246,7 @@ namespace UmsScheduler {
 			PPROC_THREAD_ATTRIBUTE_LIST pAttributeList = NULL;
 			SIZE_T sizeAttributeList = 0;
 
-			threadContext.SetThread(this);
+			threadContext.SetThread(threadContext.GetTheardContext(), this);
 			umsAttributes.UmsVersion = UMS_VERSION;
 			umsAttributes.UmsContext = threadContext.GetTheardContext();
 			umsAttributes.UmsCompletionList = completion_list->GetCompletionList();
