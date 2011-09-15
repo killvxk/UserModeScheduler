@@ -78,7 +78,7 @@ namespace UmsScheduler {
 	/////////////////////////
 	class IUmsThreadContext {
 	public:
-		virtual PUMS_CONTEXT GetTheardContext() = 0;
+		virtual PUMS_CONTEXT GetThreadContext() = 0;
 	private:
 		static BOOL SetThreadInformation(
 			PUMS_CONTEXT ums_context, UMS_THREAD_INFO_CLASS threadInfoClass, PVOID threadInfo, ULONG threadInfoLength
@@ -112,7 +112,7 @@ namespace UmsScheduler {
 			return IUmsThread;
 		}
 	public:
-		BOOL IsSuspended(PUMS_CONTEXT ums_context) {
+		static BOOL IsSuspended(PUMS_CONTEXT ums_context) {
 			BOOLEAN suspended = false;
 			ULONG returnLength = 0;
 			Check(TRUE == QueryThreadInformation(
@@ -122,7 +122,7 @@ namespace UmsScheduler {
 			return (TRUE == suspended);
 		}
 	public:
-		BOOL IsTerminated(PUMS_CONTEXT ums_context) {
+		static BOOL IsTerminated(PUMS_CONTEXT ums_context) {
 			BOOLEAN terminated = false;
 			ULONG returnLength = 0;
 			Check(TRUE == QueryThreadInformation(
