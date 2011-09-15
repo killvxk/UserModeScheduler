@@ -69,6 +69,8 @@ namespace UmsScheduler {
 	public:
 		virtual PUMS_COMPLETION_LIST GetCompletionList() = 0;
 	public:
+		virtual PUMS_CONTEXT GetCompletion() = 0;
+	public:
 		virtual ~IUmsCompletionList() {};
 	};
 	typedef std::shared_ptr<IUmsCompletionList> IUmsCompletionListPtr;
@@ -154,8 +156,21 @@ namespace UmsScheduler {
 		PUMS_COMPLETION_LIST GetCompletionList() {
 			return completion_list;
 		}
+	private:
+		std::deque<PUMS_CONTEXT> completions;
 	public:
-		void DequeueCompletions(std::deque<PUMS_CONTEXT> &completions) {
+		PUMS_CONTEXT GetCompletion() {
+			DequeueCompletions();
+			if(completions.size() > 0) {
+				PUMS_CONTEXT front = completions.front();
+				completions.pop_front();
+				return front;
+			} else {
+				return NULL;
+			}
+		}
+	private:
+		void DequeueCompletions() {
 			PUMS_CONTEXT completion = NULL;
 			Check(TRUE == ::DequeueUmsCompletionListItems(completion_list, 0, &completion));
 			while(NULL != completion) {
