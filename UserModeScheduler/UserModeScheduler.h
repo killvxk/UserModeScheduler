@@ -171,6 +171,8 @@ namespace UmsScheduler {
 		virtual ~TUmsCompletionList() {
 			Check(TRUE == ::DeleteUmsCompletionList(completion_list));
 			completion_list = NULL;
+			Check(TRUE == ::CloseHandle(hEvent));
+			hEvent = NULL;
 		}
 	};
 
