@@ -6,7 +6,8 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	UmsScheduler::RunScheduler();
+	UmsScheduler::TUmsScheduler scheduler;
+	scheduler.Run();
 	return 0;
 }
 
