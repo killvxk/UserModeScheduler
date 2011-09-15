@@ -290,7 +290,10 @@ namespace UmsScheduler {
 		}
 	public:
 		virtual void Dispatch() {
-			Check(false); //todo
+			PUMS_CONTEXT context = completion_list->GetCompletion();
+			if(NULL != context) {
+				Check(TRUE == ::ExecuteUmsThread(context));
+			}
 		}
 	public:
 		virtual void QueueWorker(IRunPtr iRun, EPriority priority) {
