@@ -200,7 +200,7 @@ namespace UmsScheduler {
 			Check(TRUE == ::CreateUmsThreadContext(&ums_context));
 		}
 	public:
-		PUMS_CONTEXT GetTheardContext() { return ums_context; }
+		PUMS_CONTEXT GetThreadContext() { return ums_context; }
 	public:
 		virtual ~TUmsThreadContext() {
 			Check(TRUE == ::DeleteUmsThreadContext(ums_context));
@@ -246,9 +246,9 @@ namespace UmsScheduler {
 			PPROC_THREAD_ATTRIBUTE_LIST pAttributeList = NULL;
 			SIZE_T sizeAttributeList = 0;
 
-			threadContext.SetThread(threadContext.GetTheardContext(), this);
+			threadContext.SetThread(threadContext.GetThreadContext(), this);
 			umsAttributes.UmsVersion = UMS_VERSION;
-			umsAttributes.UmsContext = threadContext.GetTheardContext();
+			umsAttributes.UmsContext = threadContext.GetThreadContext();
 			umsAttributes.UmsCompletionList = completion_list->GetCompletionList();
 
 			Check(FALSE == ::InitializeProcThreadAttributeList(NULL, 1, 0, &sizeAttributeList));
