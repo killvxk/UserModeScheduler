@@ -136,9 +136,6 @@ namespace UmsScheduler {
 	};
 	typedef std::shared_ptr<IUmsThreadContext> IUmsThreadContextPtr;
 
-	//////////////////////////////////////////////////////////////////
-	__declspec(thread, selectany) IUmsScheduler *iUmsScheduler = NULL;
-
 	//////////////////////////////////////////////////////
 	class TUmsCompletionList : public IUmsCompletionList {
 	private:
@@ -283,9 +280,13 @@ namespace UmsScheduler {
 		virtual PUMS_COMPLETION_LIST GetCompletionList() { return completion_list->GetCompletionList(); }
 	private:
 		__int64 threadCount;
+	private:
+		static __declspec(thread) IUmsScheduler *iUmsScheduler;
 	public:
 		TUmsScheduler() : threadCount(0) {
 			completion_list = IUmsCompletionListPtr(new TUmsCompletionList());
+			Check(NULL == iUmsScheduler);
+			iUmsScheduler = new TUmsScheduler();
 		}
 	public:
 		virtual void Dispatch() {
@@ -297,37 +298,32 @@ namespace UmsScheduler {
 			new TUmsThread(completion_list, iRun, priority);
 		}
 	public:
-		virtual ~TUmsScheduler() {}
-	};
-
-	////////////////////////////////
-	static VOID NTAPI SchedulerProc(
-		RTL_UMS_SCHEDULER_REASON Reason, ULONG_PTR ActivationPayload, PVOID SchedulerParam
-    ) {
-		iUmsScheduler->Dispatch();
-	}
-
-	///////////////////////
-	class ScopedScheduler {
+		static IUmsScheduler *Scheduler() {
+			Check(false);
+			return NULL;
+		}
+	private:
+		static VOID NTAPI SchedulerProc(
+			RTL_UMS_SCHEDULER_REASON Reason, ULONG_PTR ActivationPayload, PVOID SchedulerParam
+		) {
+			Scheduler()->Dispatch();
+		}
 	public:
-		ScopedScheduler() { iUmsScheduler = new TUmsScheduler(); }
+		void Run() {
+			UMS_SCHEDULER_STARTUP_INFO startupInfo; Clear(startupInfo);
+			startupInfo.CompletionList = iUmsScheduler->GetCompletionList();
+			startupInfo.SchedulerParam = NULL;
+			startupInfo.SchedulerProc = SchedulerProc;
+			startupInfo.UmsVersion = UMS_VERSION;
+			Check(TRUE == ::EnterUmsSchedulingMode(&startupInfo));
+		}
 	public:
-		~ScopedScheduler() {
-			if(NULL != iUmsScheduler) {
-				delete iUmsScheduler;
-				iUmsScheduler = NULL;
-			}
+		virtual ~TUmsScheduler() {
+			Check(NULL != iUmsScheduler);
+			delete iUmsScheduler;
+			iUmsScheduler = NULL;
 		}
 	};
+	__declspec(thread) IUmsScheduler *TUmsScheduler::iUmsScheduler = NULL;
 
-	////////////////////////////
-	inline void RunScheduler() {
-		ScopedScheduler scopedScheduler;
-		UMS_SCHEDULER_STARTUP_INFO startupInfo; Clear(startupInfo);
-		startupInfo.CompletionList = iUmsScheduler->GetCompletionList();
-		startupInfo.SchedulerParam = NULL;
-		startupInfo.SchedulerProc = SchedulerProc;
-		startupInfo.UmsVersion = UMS_VERSION;
-		Check(TRUE == ::EnterUmsSchedulingMode(&startupInfo));
-	}
 }
