@@ -9,12 +9,13 @@
 #include <deque>
 
 namespace UmsScheduler {
+	////////////////////////////////////////
+	enum EPriority { Normal = 1, High = 2 };
+
 	//////////////////
 	class IUmsThread {
 	public:
-		virtual void Run() = 0;
-	public:
-		enum EPriority { Normal = 1, High = 2 };
+		virtual DWORD Run() = 0;
 	public:
 		virtual void SetPriority(EPriority priority) = 0;
 	public:
@@ -44,7 +45,7 @@ namespace UmsScheduler {
 	////////////
 	class IRun {
 	public:
-		virtual void Run() = 0;
+		virtual DWORD Run() = 0;
 	public:
 		virtual ~IRun() {}
 	};
@@ -55,7 +56,7 @@ namespace UmsScheduler {
 	public:
 		virtual PUMS_COMPLETION_LIST GetCompletionList() = 0;
 	public:
-		virtual void QueueWorker(IRunPtr iRun) = 0;
+		virtual void QueueWorker(IRunPtr iRun, EPriority priority) = 0;
 	public:
 		virtual void Dispatch() = 0;
 	public:
@@ -159,7 +160,7 @@ namespace UmsScheduler {
 			Check(TRUE == ::DequeueUmsCompletionListItems(completion_list, 0, &completion));
 			while(NULL != completion) {
 				IUmsThread *thread = IUmsThreadContext::GetThread(completion);
-				if((NULL != thread) && (thread->GetPriority() == IUmsThread::High))
+				if((NULL != thread) && (thread->GetPriority() == High))
 					completions.push_front(completion);
 				else
 					completions.push_back(completion);
@@ -190,26 +191,6 @@ namespace UmsScheduler {
 		}
 	};
 
-	////////////////////////////////////////////
-	class TUmsScheduler : public IUmsScheduler {
-	private:
-		TUmsCompletionList completion_list;
-	public:
-		PUMS_COMPLETION_LIST GetCompletionList() { return completion_list.GetCompletionList(); }
-	public:
-		TUmsScheduler() { }
-	public:
-		void Dispatch() {
-			Check(false); //todo
-		}
-	public:
-		virtual void QueueWorker(IRunPtr iRun) {
-			Check(false); //todo
-		}
-	public:
-		virtual ~TUmsScheduler() {}
-	};
-
 	//////////////////////////////////////
 	class TUmsThread : public IUmsThread {
 	private:
@@ -232,11 +213,13 @@ namespace UmsScheduler {
 		void SetPriority(EPriority priority) { this->priority = priority; }
 	public:
 		EPriority GetPriority() { return priority; }
+	public:
+		DWORD Run() { return iRun->Run(); }
 	private:
 		static DWORD CALLBACK UMSThreadProxyMain(LPVOID lpParameter)
 		{
 			TUmsThread *thread = reinterpret_cast<TUmsThread*>(lpParameter);
-			thread->Run();
+			return thread->Run();
 		}
 	public:
 		TUmsThread(IUmsCompletionListPtr completion_list, IRunPtr iRun, EPriority priority = Normal, DWORD stackSize = 1) : 
@@ -266,6 +249,31 @@ namespace UmsScheduler {
 			Check(NULL != hThread);
 			::DeleteProcThreadAttributeList(pAttributeList);
 		}
+	};
+
+	////////////////////////////////////////////
+	class TUmsScheduler : public IUmsScheduler {
+	private:
+		IUmsCompletionListPtr completion_list;
+	public:
+		virtual PUMS_COMPLETION_LIST GetCompletionList() { return completion_list->GetCompletionList(); }
+	private:
+		__int64 threadCount;
+	public:
+		TUmsScheduler() : threadCount(0) {
+			completion_list = IUmsCompletionListPtr(new TUmsCompletionList());
+		}
+	public:
+		virtual void Dispatch() {
+			Check(false); //todo
+		}
+	public:
+		virtual void QueueWorker(IRunPtr iRun, EPriority priority) {
+			threadCount++;
+			new TUmsThread(completion_list, iRun, priority);
+		}
+	public:
+		virtual ~TUmsScheduler() {}
 	};
 
 	////////////////////////////////
