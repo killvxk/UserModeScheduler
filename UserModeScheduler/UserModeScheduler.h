@@ -161,13 +161,20 @@ namespace UmsScheduler {
 	public:
 		PUMS_CONTEXT GetCompletion() {
 			DequeueCompletions();
-			if(completions.size() > 0) {
+			while(completions.size() > 0) {
 				PUMS_CONTEXT front = completions.front();
 				completions.pop_front();
-				return front;
-			} else {
-				return NULL;
+				if(TRUE == IUmsThreadContext::IsTerminated(front)) {
+					delete IUmsThreadContext::GetThread(front);
+					continue;
+				} else if(TRUE == IUmsThreadContext::IsSuspended(front)) {
+					completions.push_back(front);
+					continue;
+				} else {
+					return front;
+				}
 			}
+			return NULL;
 		}
 	private:
 		void DequeueCompletions() {
