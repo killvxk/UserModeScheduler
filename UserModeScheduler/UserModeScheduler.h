@@ -115,20 +115,20 @@ namespace UmsScheduler {
 				);
 		}
 	public:
-		static void SetThread(PUMS_CONTEXT ums_context, IUmsThread *IUmsThread) {
+		static void SetThread(PUMS_CONTEXT ums_context, IUmsThread *iUmsThread) {
 			Check(TRUE == SetThreadInformation(
-				ums_context, UmsThreadUserContext, &IUmsThread,	sizeof(IUmsThread)
+				ums_context, UmsThreadUserContext, &iUmsThread,	sizeof(IUmsThread)
 				));
 		}
 	public:
 		static IUmsThread *GetThread(PUMS_CONTEXT ums_context) {
-			IUmsThread *IUmsThread = NULL;
+			IUmsThread *iUmsThread = NULL;
 			ULONG returnLength = 0;
 			Check(TRUE == QueryThreadInformation(
-				ums_context, UmsThreadUserContext, &IUmsThread, sizeof(IUmsThread), &returnLength
+				ums_context, UmsThreadUserContext, &iUmsThread, sizeof(iUmsThread), &returnLength
 				));
 			Check(sizeof(IUmsThread) == returnLength);
-			return IUmsThread;
+			return iUmsThread;
 		}
 	public:
 		static BOOL IsSuspended(PUMS_CONTEXT ums_context) {
