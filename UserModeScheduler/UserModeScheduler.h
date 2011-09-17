@@ -12,6 +12,8 @@ namespace UmsScheduler {
 	////////////////////////////////////////
 	enum EPriority { Normal = 1, High = 2 };
 
+	class IUmsScheduler;
+
 	//////////////////
 	class IUmsThread {
 	public:
@@ -20,6 +22,8 @@ namespace UmsScheduler {
 		virtual void SetPriority(EPriority priority) = 0;
 	public:
 		virtual EPriority GetPriority() = 0;
+	public:
+		virtual IUmsScheduler *GetScheduler() = 0;
 	public:
 		~IUmsThread() {}
 	};
@@ -255,6 +259,8 @@ namespace UmsScheduler {
 	private:
 		IRunPtr iRun;
 	private:
+		IUmsScheduler *scheduler;
+	private:
 		enum { KB = 1024 };
 	private:
 		EPriority priority;
@@ -264,6 +270,8 @@ namespace UmsScheduler {
 		EPriority GetPriority() { return priority; }
 	public:
 		DWORD Run() { return iRun->Run(); }
+	public:
+		IUmsScheduler *GetScheduler() { return scheduler; }
 	private:
 		static DWORD CALLBACK UMSThreadProxyMain(LPVOID lpParameter)
 		{
@@ -271,8 +279,10 @@ namespace UmsScheduler {
 			return thread->Run();
 		}
 	public:
-		TUmsThread(IUmsCompletionListPtr completion_list, IRunPtr iRun, EPriority priority = Normal, DWORD stackSize = 1) : 
-		  completion_list(completion_list), hThread(NULL), threadId(0), iRun(iRun), priority(priority) {
+		TUmsThread(IUmsScheduler *scheduler, IUmsCompletionListPtr completion_list, 
+			IRunPtr iRun, EPriority priority = Normal, DWORD stackSize = 1) : 
+		  scheduler(scheduler), completion_list(completion_list), hThread(NULL), 
+			  threadId(0), iRun(iRun), priority(priority) {
 
 			UMS_CREATE_THREAD_ATTRIBUTES umsAttributes; Clear(umsAttributes);
 			PPROC_THREAD_ATTRIBUTE_LIST pAttributeList = NULL;
@@ -332,12 +342,24 @@ namespace UmsScheduler {
 	public:
 		virtual void QueueWorker(IRunPtr iRun, EPriority priority) {
 			completion_list->ThreadCount()->Increment();
-			new TUmsThread(completion_list, iRun, priority);
+			new TUmsThread(this, completion_list, iRun, priority);
 		}
 	public:
 		static IUmsScheduler *Scheduler() {
-			Check(false);
-			return NULL;
+			PUMS_CONTEXT umsContext = ::GetCurrentUmsThread();
+			if(NULL == umsContext) { // non-UMS thread
+				Check(NULL != TUmsScheduler::iUmsScheduler);
+				return TUmsScheduler::iUmsScheduler;
+			} else {
+				IUmsThread *thread = IUmsThreadContext::GetThread(umsContext);
+				if(NULL == thread) { // UMS mode, scheduler
+					Check(NULL != TUmsScheduler::iUmsScheduler);
+					return TUmsScheduler::iUmsScheduler;
+				} else { // UMS mode, worker
+					Check(NULL != thread->GetScheduler());
+					return thread->GetScheduler();
+				}
+			}
 		}
 	private:
 		static VOID NTAPI SchedulerProc(
