@@ -302,7 +302,9 @@ namespace UmsScheduler {
 			std::vector<char> attributeList(sizeAttributeList);
 			pAttributeList = reinterpret_cast<PPROC_THREAD_ATTRIBUTE_LIST>(&attributeList[0]);
 			Check(TRUE == ::InitializeProcThreadAttributeList(pAttributeList, 1, 0, &sizeAttributeList));
-			Check(TRUE == ::UpdateProcThreadAttribute(pAttributeList, 0, PROC_THREAD_ATTRIBUTE_UMS_THREAD, &umsAttributes, sizeof(UMS_CREATE_THREAD_ATTRIBUTES), NULL, NULL));
+			Check(TRUE == ::UpdateProcThreadAttribute(
+				pAttributeList, 0, PROC_THREAD_ATTRIBUTE_UMS_THREAD, 
+				&umsAttributes, sizeof(UMS_CREATE_THREAD_ATTRIBUTES), NULL, NULL));
 
 			hThread = ::CreateRemoteThreadEx(
 				GetCurrentProcess(), NULL, stackSize*KB, UMSThreadProxyMain, 
