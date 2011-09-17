@@ -71,6 +71,8 @@ namespace UmsScheduler {
 	public:
 		virtual PUMS_CONTEXT GetCompletion() = 0;
 	public:
+		virtual HANDLE GetEvent() = 0;
+	public:
 		virtual ~IUmsCompletionList() {};
 	};
 	typedef std::shared_ptr<IUmsCompletionList> IUmsCompletionListPtr;
