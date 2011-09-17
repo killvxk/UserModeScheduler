@@ -214,7 +214,8 @@ namespace UmsScheduler {
 			Check(TRUE == ::DequeueUmsCompletionListItems(completion_list, 0, &completion));
 			while(NULL != completion) {
 				IUmsThread *thread = IUmsThreadContext::GetThread(completion);
-				if((NULL != thread) && (thread->GetPriority() == High))
+				Check(NULL != thread);
+				if(thread->GetPriority() == High)
 					completions.push_front(completion);
 				else
 					completions.push_back(completion);
