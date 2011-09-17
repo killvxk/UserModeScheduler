@@ -36,11 +36,12 @@ namespace UmsScheduler {
 
 	////////////////////////////////////////////////////////////////
 	inline void CheckMacro(bool check, std::string file, int line) {
-		if(true == check) {
+		if(!check) {
 			std::stringstream dbg;
 			dbg << "last_err: " << ::GetLastError() << ", file: " << file << ", line: " << line << std::endl;
 			std::cout << dbg.str();
 			::OutputDebugStringA(dbg.str().c_str());
+			DebugBreak();
 		}
 	}
 
