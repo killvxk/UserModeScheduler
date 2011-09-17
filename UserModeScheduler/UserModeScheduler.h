@@ -51,6 +51,14 @@ namespace UmsScheduler {
 	};
 	typedef std::shared_ptr<IRun> IRunPtr;
 
+	///////////////////////
+	class IUmsThreadCount {
+		public:
+			virtual void Increment() = 0;
+		public:
+			virtual bool ReadyToExit() = 0;
+	};
+
 	/////////////////////
 	class IUmsScheduler {
 	public:
@@ -72,6 +80,8 @@ namespace UmsScheduler {
 		virtual PUMS_CONTEXT GetCompletion() = 0;
 	public:
 		virtual HANDLE GetEvent() = 0;
+	public:
+		virtual IUmsThreadCount *ThreadCount() = 0;
 	public:
 		virtual ~IUmsCompletionList() {};
 	};
@@ -141,6 +151,21 @@ namespace UmsScheduler {
 	//////////////////////////////////////////////////////
 	class TUmsCompletionList : public IUmsCompletionList {
 	private:
+		class TUmsThreadCount : public IUmsThreadCount {
+		public:
+			TUmsThreadCount() : count(0) {}
+		private:
+			int count;
+		public:
+			void Increment() { count++; }
+		public:
+			void Decrement() { count--; }
+		public:
+			bool ReadyToExit() { Check(count >= 0); return (count == 0); }
+		} threadCount;
+	private:
+		IUmsThreadCount *ThreadCount() { return &threadCount; }
+	private:
 		PUMS_COMPLETION_LIST completion_list;
 	private:
 		HANDLE hEvent;
@@ -165,6 +190,7 @@ namespace UmsScheduler {
 				completions.pop_front();
 				if(TRUE == IUmsThreadContext::IsTerminated(front)) {
 					delete IUmsThreadContext::GetThread(front);
+					threadCount.Decrement();
 					continue;
 				} else if(TRUE == IUmsThreadContext::IsSuspended(front)) {
 					completions.push_back(front);
@@ -281,11 +307,9 @@ namespace UmsScheduler {
 	public:
 		virtual PUMS_COMPLETION_LIST GetCompletionList() { return completion_list->GetCompletionList(); }
 	private:
-		__int64 threadCount;
-	private:
 		static __declspec(thread) IUmsScheduler *iUmsScheduler;
 	public:
-		TUmsScheduler() : threadCount(0) {
+		TUmsScheduler() {
 			completion_list = IUmsCompletionListPtr(new TUmsCompletionList());
 			Check(NULL == iUmsScheduler);
 			iUmsScheduler = new TUmsScheduler();
@@ -299,7 +323,7 @@ namespace UmsScheduler {
 		}
 	public:
 		virtual void QueueWorker(IRunPtr iRun, EPriority priority) {
-			threadCount++;
+			completion_list->ThreadCount()->Increment();
 			new TUmsThread(completion_list, iRun, priority);
 		}
 	public:
