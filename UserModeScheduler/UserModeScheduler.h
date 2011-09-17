@@ -25,7 +25,7 @@ namespace UmsScheduler {
 	public:
 		virtual IUmsScheduler *GetScheduler() = 0;
 	public:
-		~IUmsThread() {}
+		virtual ~IUmsThread() { }
 	};
 	typedef std::shared_ptr<IUmsThread> IUmsThreadPtr;
 
@@ -314,6 +314,8 @@ namespace UmsScheduler {
 			Check(NULL != hThread);
 			::DeleteProcThreadAttributeList(pAttributeList);
 		}
+	public:
+		virtual ~TUmsThread() {	}
 	};
 
 	////////////////////////////////////////////
