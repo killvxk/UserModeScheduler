@@ -316,9 +316,17 @@ namespace UmsScheduler {
 		}
 	public:
 		virtual void Dispatch() {
-			PUMS_CONTEXT context = completion_list->GetCompletion();
-			if(NULL != context) {
-				Check(TRUE == ::ExecuteUmsThread(context));
+			for(;;) {
+				PUMS_CONTEXT context = completion_list->GetCompletion();
+				if(NULL != context) {
+					Check(TRUE == ::ExecuteUmsThread(context));
+					break;
+				} else {
+					if(false == completion_list->ThreadCount()->ReadyToExit())
+						Check(WAIT_OBJECT_0 == ::WaitForSingleObject(completion_list->GetEvent(), INFINITE));
+					else
+						break;
+				}
 			}
 		}
 	public:
