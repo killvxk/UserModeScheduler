@@ -322,13 +322,12 @@ namespace UmsScheduler {
 		IUmsCompletionListPtr completion_list;
 	public:
 		virtual PUMS_COMPLETION_LIST GetCompletionList() { return completion_list->GetCompletionList(); }
-	private:
+	public:
 		static __declspec(thread) IUmsScheduler *iUmsScheduler;
 	public:
 		TUmsScheduler() {
 			completion_list = IUmsCompletionListPtr(new TUmsCompletionList());
 			Check(NULL == iUmsScheduler);
-			iUmsScheduler = new TUmsScheduler();
 		}
 	public:
 		virtual void Dispatch() {
@@ -384,9 +383,6 @@ namespace UmsScheduler {
 		}
 	public:
 		virtual ~TUmsScheduler() {
-			Check(NULL != iUmsScheduler);
-			delete iUmsScheduler;
-			iUmsScheduler = NULL;
 		}
 	};
 	__declspec(thread) IUmsScheduler *TUmsScheduler::iUmsScheduler = NULL;
