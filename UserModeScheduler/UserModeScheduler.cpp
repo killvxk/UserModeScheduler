@@ -5,10 +5,15 @@
 #include "UserModeScheduler.h"
 
 class TimedPrinter : public UmsScheduler::IRun {
+public:
 	DWORD Run() {
 		for(int i = 0; i < 10; i++)
 			std::cout << __FUNCTION__ << ": " << i << std::endl;
 		return 0;
+	}
+public:
+	virtual ~TimedPrinter() {
+		::OutputDebugStringA(__FUNCTION__"\r\n");
 	}
 };
 
