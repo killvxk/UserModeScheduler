@@ -73,6 +73,8 @@ namespace UmsScheduler {
 	public:
 		virtual void Dispatch() = 0;
 	public:
+		virtual void Run() = 0;
+	public:
 		virtual ~IUmsScheduler() {}
 	};
 	typedef std::shared_ptr<IUmsScheduler> IUmsSchedulerPtr;
