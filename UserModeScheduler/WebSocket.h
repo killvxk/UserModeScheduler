@@ -7,6 +7,7 @@
 #include <sstream>
 #include <memory>
 #include "Check.h"
+#include "Interfaces.h"
 
 ///////////////////
 class TWSAStartup {
@@ -24,28 +25,6 @@ public:
 		Check(SOCKET_ERROR != ::WSACleanup());
 	}
 };
-
-/////////////////////
-class IServerClient {
-public:
-	virtual ~IServerClient() {}
-};
-typedef std::shared_ptr<IServerClient> IServerClientPtr;
-
-///////////////
-class ISocket {
-public:
-	virtual SOCKET GetSocket() = 0;
-public:
-	virtual HANDLE GetHandle() = 0;
-public:
-	virtual void Bind(std::string nic, short port) = 0;
-public:
-	virtual void Connect(std::string addr, short port) = 0;
-public:
-	virtual ~ISocket() {}
-};
-typedef std::shared_ptr<ISocket> ISocketPtr;
 
 ////////////////////////////////
 class TSocket : public ISocket {
@@ -100,7 +79,7 @@ public:
 };
 
 /////////////////////////////////////////////////////////
-class TServerClient : public IServerClient {
+class TServerClient : public IServerClient, public IRun {
 private:
 	TWSAStartup startUp;
 private:

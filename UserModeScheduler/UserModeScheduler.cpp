@@ -5,7 +5,7 @@
 #include "WebSocket.h"
 #include "UserModeScheduler.h"
 
-class TimedPrinter : public UmsScheduler::IRun {
+class TimedPrinter : public IRun {
 public:
 	DWORD Run() {
 		for(int i = 0; i < 10; i++)
@@ -21,7 +21,7 @@ public:
 int _tmain(int argc, _TCHAR* argv[])
 {
 	UmsScheduler::TUmsScheduler::iUmsScheduler = new UmsScheduler::TUmsScheduler();
-	UmsScheduler::TUmsScheduler::iUmsScheduler->QueueWorker(std::shared_ptr<UmsScheduler::IRun>(new TimedPrinter()), UmsScheduler::Normal);
+	UmsScheduler::TUmsScheduler::iUmsScheduler->QueueWorker(IRunPtr(new TimedPrinter()), Normal);
 	UmsScheduler::TUmsScheduler::iUmsScheduler->Run();
 	return 0;
 }

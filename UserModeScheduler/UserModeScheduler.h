@@ -8,75 +8,9 @@
 #include <sstream>
 #include <deque>
 #include "Check.h"
+#include "Interfaces.h"
 
 namespace UmsScheduler {
-	////////////////////////////////////////
-	enum EPriority { Normal = 1, High = 2 };
-
-	class IUmsScheduler;
-
-	//////////////////
-	class IUmsThread {
-	public:
-		virtual DWORD Run() = 0;
-	public:
-		virtual void SetPriority(EPriority priority) = 0;
-	public:
-		virtual EPriority GetPriority() = 0;
-	public:
-		virtual IUmsScheduler *GetScheduler() = 0;
-	public:
-		virtual ~IUmsThread() { }
-	};
-	typedef std::shared_ptr<IUmsThread> IUmsThreadPtr;
-
-	////////////
-	class IRun {
-	public:
-		virtual DWORD Run() = 0;
-	public:
-		virtual ~IRun() {}
-	};
-	typedef std::shared_ptr<IRun> IRunPtr;
-
-	///////////////////////
-	class IUmsThreadCount {
-		public:
-			virtual void Increment() = 0;
-		public:
-			virtual bool ReadyToExit() = 0;
-	};
-
-	/////////////////////
-	class IUmsScheduler {
-	public:
-		virtual PUMS_COMPLETION_LIST GetCompletionList() = 0;
-	public:
-		virtual void QueueWorker(IRunPtr iRun, EPriority priority) = 0;
-	public:
-		virtual void Dispatch() = 0;
-	public:
-		virtual void Run() = 0;
-	public:
-		virtual ~IUmsScheduler() {}
-	};
-	typedef std::shared_ptr<IUmsScheduler> IUmsSchedulerPtr;
-
-	//////////////////////////
-	class IUmsCompletionList {
-	public:
-		virtual PUMS_COMPLETION_LIST GetCompletionList() = 0;
-	public:
-		virtual PUMS_CONTEXT GetCompletion() = 0;
-	public:
-		virtual HANDLE GetEvent() = 0;
-	public:
-		virtual IUmsThreadCount *ThreadCount() = 0;
-	public:
-		virtual ~IUmsCompletionList() {};
-	};
-	typedef std::shared_ptr<IUmsCompletionList> IUmsCompletionListPtr;
-
 	/////////////////////////
 	class IUmsThreadContext {
 	public:
