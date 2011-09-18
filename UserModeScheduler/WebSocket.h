@@ -78,6 +78,10 @@ public:
 	}
 };
 
+///////////////////////////////////////////////
+class TSession : public ISession, public IRun {
+};
+
 /////////////////////////////////////////////////////////
 class TServerClient : public IServerClient, public IRun {
 private:
@@ -88,10 +92,15 @@ private:
 	std::string nic;
 private:
 	short port;
+private:
+	ISocketPtr listener;
 public:
 	TServerClient(std::string nic, short port) : nic(nic), port(port) {
-
+		listener = ISocketPtr(new TSocket());
+		listener->Bind(nic, port);
 	}
+private:
+	//todo, session
 private:
 	DWORD Run() {
 		//todo

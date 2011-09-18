@@ -27,6 +27,12 @@ public:
 };
 typedef std::shared_ptr<ISocket> ISocketPtr;
 
+////////////////
+class ISession {
+public:
+	virtual ~ISession() {}
+};
+
 ////////////////////
 class IUmsScheduler;
 
