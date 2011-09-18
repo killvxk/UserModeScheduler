@@ -7,6 +7,7 @@
 #include <vector>
 #include <sstream>
 #include <deque>
+#include "Check.h"
 
 namespace UmsScheduler {
 	////////////////////////////////////////
@@ -28,24 +29,6 @@ namespace UmsScheduler {
 		virtual ~IUmsThread() { }
 	};
 	typedef std::shared_ptr<IUmsThread> IUmsThreadPtr;
-
-	////////////////////////////////////////
-	template <typename T> void Clear(T &t) {
-		memset(&t, 0, sizeof(t));
-	}
-
-	////////////////////////////////////////////////////////////////
-	inline void CheckMacro(bool check, std::string file, int line) {
-		if(!check) {
-			std::stringstream dbg;
-			dbg << "last_err: " << ::GetLastError() << ", file: " << file << ", line: " << line << std::endl;
-			std::cout << dbg.str();
-			::OutputDebugStringA(dbg.str().c_str());
-			DebugBreak();
-		}
-	}
-
-#define Check(x) CheckMacro(x, __FILE__, __LINE__)
 
 	////////////
 	class IRun {

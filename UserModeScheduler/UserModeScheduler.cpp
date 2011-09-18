@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "WebSocket.h"
 #include "UserModeScheduler.h"
 
 class TimedPrinter : public UmsScheduler::IRun {
