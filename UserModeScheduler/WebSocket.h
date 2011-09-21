@@ -35,7 +35,8 @@ private:
 	SOCKET socket;
 public:
 	TSocket() : socket(INVALID_SOCKET) {
-		socket = ::WSASocketA(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, WSA_FLAG_OVERLAPPED);
+		socket = ::WSASocketA(
+			AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, WSA_FLAG_OVERLAPPED);
 		Check(INVALID_SOCKET != socket);
 	}
 public:
@@ -55,7 +56,7 @@ public:
 		Check(SOCKET_ERROR != ::bind(socket, reinterpret_cast<LPSOCKADDR>(&addr), sizeof(addr)));
 	}
 public:
-	void Listen(int backlog = SOMAXCONN) {
+	void Listen(int backlog) {
 		Check(SOCKET_ERROR != ::listen(socket, backlog));
 	}
 public:
@@ -114,8 +115,12 @@ public:
 		  TUmsScheduler::Scheduler()->QueueWorker(this, Normal);
 	}
 private:
+	std::string recv_buff;
+private:
 	virtual DWORD Run() {
-		Check(false);
+		for(;;) {
+			iSocket->Recv(recv_buff);
+		}
 	}
 };
 
@@ -163,6 +168,7 @@ public:
 	THttpServer(std::string nic, short port) : nic(nic), port(port) {
 		listener = ISocketPtr(new TSocket());
 		listener->Bind(nic, port);
+		listener->Listen(SOMAXCONN);
 		iSessions = ISessionsPtr(new TSessions(this));
 	}
 private:

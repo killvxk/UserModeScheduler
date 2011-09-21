@@ -27,9 +27,15 @@ public:
 public:
 	virtual void Bind(std::string nic, short port) = 0;
 public:
+	virtual void Listen(int backlog) = 0;
+public:
 	virtual std::shared_ptr<ISocket> Accept() = 0;
 public:
 	virtual void Connect(std::string addr, short port) = 0;
+public:
+	virtual void Recv(std::string &data) = 0;
+public:
+	virtual void Send(const std::string &data) = 0;
 public:
 	virtual ~ISocket() {}
 };
@@ -45,12 +51,6 @@ public:
 	virtual void OnData(const std::string& data) = 0;
 };
 typedef std::shared_ptr<ISessions> ISessionsPtr;
-
-////////////////
-class ISession {
-public:
-	virtual ~ISession() {}
-};
 
 ////////////////////
 class IUmsScheduler;

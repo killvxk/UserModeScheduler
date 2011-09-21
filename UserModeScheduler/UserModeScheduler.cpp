@@ -22,6 +22,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	TUmsScheduler::iUmsScheduler = new TUmsScheduler();
 	TUmsScheduler::iUmsScheduler->QueueWorker(new TimedPrinter(), Normal);
+	TUmsScheduler::iUmsScheduler->QueueWorker(new THttpServer("127.0.0.1", 80), Normal);
 	TUmsScheduler::iUmsScheduler->Run();
 	return 0;
 }
