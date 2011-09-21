@@ -20,8 +20,8 @@ public:
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	UmsScheduler::TUmsScheduler::iUmsScheduler = new UmsScheduler::TUmsScheduler();
-	UmsScheduler::TUmsScheduler::iUmsScheduler->QueueWorker(IRunPtr(new TimedPrinter()), Normal);
-	UmsScheduler::TUmsScheduler::iUmsScheduler->Run();
+	TUmsScheduler::iUmsScheduler = new TUmsScheduler();
+	TUmsScheduler::iUmsScheduler->QueueWorker(new TimedPrinter(), Normal);
+	TUmsScheduler::iUmsScheduler->Run();
 	return 0;
 }

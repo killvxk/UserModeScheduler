@@ -6,8 +6,11 @@
 #include <string>
 #include <sstream>
 #include <memory>
+#include <map>
+#include <hash_map>
 #include "Check.h"
 #include "Interfaces.h"
+#include "UserModeScheduler.h"
 
 ///////////////////
 class TWSAStartup {
@@ -70,6 +73,23 @@ public:
 		Check(SOCKET_ERROR != ::connect(socket, reinterpret_cast<LPSOCKADDR>(&connect_addr), sizeof(connect_addr)));
 	}
 public:
+	enum { max_recv = 128 };
+public:
+	void Recv(std::string &data) {
+		byte_array recv_buff(max_recv);
+		Check(SOCKET_ERROR != ::recv(socket, &recv_buff[0], static_cast<int>(recv_buff.size()), 0));
+		data.append(&recv_buff[0], recv_buff.size());
+	}
+public:
+	void Send(const std::string &data) {
+		int offset = 0;
+		while(offset < data.length()) {
+			int count = ::send(socket, &data.c_str()[offset], static_cast<int>(data.length()) - offset, 0);
+			Check(SOCKET_ERROR != count);
+			offset += count;
+		}
+	}
+public:
 	~TSocket() {
 		if(INVALID_SOCKET == socket) {
 			Check(SOCKET_ERROR != ::closesocket(socket));
@@ -78,16 +98,61 @@ public:
 	}
 };
 
-///////////////////////////////////////////////
-class TSession : public ISession, public IRun {
+///////////////////////
+class TSession : IRun {
+public:
+	TSession() { Check(false); }
+private:
+	ISessions *iSessions;
+private:
+	__int64 session_id;
+private:
+	ISocketPtr iSocket;
+public:
+	TSession(__int64 session_id, ISocketPtr iSocket, ISessions *iSessions) : 
+	  session_id(session_id), iSocket(iSocket), iSessions(iSessions) {
+		  TUmsScheduler::Scheduler()->QueueWorker(this, Normal);
+	}
+private:
+	virtual DWORD Run() {
+		Check(false);
+	}
+};
+
+////////////////////////////////////
+class TSessions : public ISessions {
+private:
+	__int64 next_session_id;
+private:
+	std::map<__int64 /*session_id*/, TSession> sessions;
+private:
+	IHttpServer *iHttpServer;
+private:
+	TSessions() { Check(false); }
+public:
+	TSessions(IHttpServer *iHttpServer) : 
+	  iHttpServer(iHttpServer), next_session_id(0) {}
+public:
+	void Add(ISocketPtr iSocket) {
+		sessions[next_session_id] = TSession(next_session_id, iSocket, this);
+	}
+private:
+	void Remove(__int64 session_id) {
+		sessions.erase(session_id);
+	}
+public:
+	void OnData(const std::string& data) {
+		//todo
+		Check(false);
+	}
 };
 
 /////////////////////////////////////////////////////////
-class TServerClient : public IServerClient, public IRun {
+class THttpServer : public IHttpServer, public IRun {
 private:
 	TWSAStartup startUp;
 private:
-	TServerClient() {}
+	THttpServer() {}
 private:
 	std::string nic;
 private:
@@ -95,18 +160,24 @@ private:
 private:
 	ISocketPtr listener;
 public:
-	TServerClient(std::string nic, short port) : nic(nic), port(port) {
+	THttpServer(std::string nic, short port) : nic(nic), port(port) {
 		listener = ISocketPtr(new TSocket());
 		listener->Bind(nic, port);
+		iSessions = ISessionsPtr(new TSessions(this));
 	}
 private:
-	//todo, session
+	virtual void OnData(__int64 session_id, const std::string &data) {
+		Check(false);
+	}
+private:
+	ISessionsPtr iSessions;
 private:
 	DWORD Run() {
-		//todo
-		Check(false);
+		for(;;) {
+			iSessions->Add(listener->Accept());
+		}
 		return 0;
 	}
 public:
-	virtual ~TServerClient() {}
+	virtual ~THttpServer() {}
 };
