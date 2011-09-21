@@ -42,7 +42,7 @@ public:
 typedef std::shared_ptr<ISocket> ISocketPtr;
 
 /////////////////
-class ISessions {
+class IHttpSessions {
 public:
 	virtual void Add(ISocketPtr iSocket) = 0;
 public:
@@ -50,7 +50,7 @@ public:
 public:
 	virtual void OnData(const std::string& data) = 0;
 };
-typedef std::shared_ptr<ISessions> ISessionsPtr;
+typedef std::shared_ptr<IHttpSessions> IHttpSessionsPtr;
 
 ////////////////////
 class IUmsScheduler;

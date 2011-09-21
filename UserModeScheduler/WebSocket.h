@@ -99,19 +99,19 @@ public:
 	}
 };
 
-///////////////////////
-class TSession : IRun {
+///////////////////////////
+class THttpSession : IRun {
 public:
-	TSession() { Check(false); }
+	THttpSession() { Check(false); }
 private:
-	ISessions *iSessions;
+	IHttpSessions *iHttpSessions;
 private:
 	__int64 session_id;
 private:
 	ISocketPtr iSocket;
 public:
-	TSession(__int64 session_id, ISocketPtr iSocket, ISessions *iSessions) : 
-	  session_id(session_id), iSocket(iSocket), iSessions(iSessions) {
+	THttpSession(__int64 session_id, ISocketPtr iSocket, IHttpSessions *iHttpSessions) : 
+	  session_id(session_id), iSocket(iSocket), iHttpSessions(iHttpSessions) {
 		  TUmsScheduler::Scheduler()->QueueWorker(this, Normal);
 	}
 private:
@@ -124,22 +124,22 @@ private:
 	}
 };
 
-////////////////////////////////////
-class TSessions : public ISessions {
+////////////////////////////////////////////
+class THttpSessions : public IHttpSessions {
 private:
 	__int64 next_session_id;
 private:
-	std::map<__int64 /*session_id*/, TSession> sessions;
+	std::map<__int64 /*session_id*/, THttpSession> sessions;
 private:
 	IHttpServer *iHttpServer;
 private:
-	TSessions() { Check(false); }
+	THttpSessions() { Check(false); }
 public:
-	TSessions(IHttpServer *iHttpServer) : 
+	THttpSessions(IHttpServer *iHttpServer) : 
 	  iHttpServer(iHttpServer), next_session_id(0) {}
 public:
 	void Add(ISocketPtr iSocket) {
-		sessions[next_session_id] = TSession(next_session_id, iSocket, this);
+		sessions[next_session_id] = THttpSession(next_session_id, iSocket, this);
 	}
 private:
 	void Remove(__int64 session_id) {
@@ -152,7 +152,7 @@ public:
 	}
 };
 
-/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////
 class THttpServer : public IHttpServer, public IRun {
 private:
 	TWSAStartup startUp;
@@ -169,18 +169,18 @@ public:
 		listener = ISocketPtr(new TSocket());
 		listener->Bind(nic, port);
 		listener->Listen(SOMAXCONN);
-		iSessions = ISessionsPtr(new TSessions(this));
+		iHttpSessions = IHttpSessionsPtr(new THttpSessions(this));
 	}
 private:
 	virtual void OnData(__int64 session_id, const std::string &data) {
 		Check(false);
 	}
 private:
-	ISessionsPtr iSessions;
+	IHttpSessionsPtr iHttpSessions;
 private:
 	DWORD Run() {
 		for(;;) {
-			iSessions->Add(listener->Accept());
+			iHttpSessions->Add(listener->Accept());
 		}
 		return 0;
 	}
